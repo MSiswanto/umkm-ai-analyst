@@ -23,7 +23,8 @@ fashion & retail mengambil keputusan berbasis data secara cepat dan strategis.
 
 st.divider()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+#client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = Groq(api_key=st.secrets["GROQ_KEY"])  # pakai Secrets Streamlit
 
 # ======================
 # CHAT SECTION
