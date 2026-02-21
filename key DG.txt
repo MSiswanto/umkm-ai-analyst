@@ -1,0 +1,21 @@
+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
+
+setx OPENAI_API_KEY "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"
+
+Hugging Face:
+c
+
+setx HF_TOKEN "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"
+
+
+Groq:
+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
+
+GROQ_API_KEY=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
+
+
+Key Lama:
+grq_kvHXoP7xgaGrSqAnGX7yWGdyb3FYnSGZ33HQcba3KCmt90OMvgel
+
+
+grq_kvHXoP7xgaGrSqAnGX7yWGdyb3FYnSGZ33HQcba3KCmt90OMvgel>
