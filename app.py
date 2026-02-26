@@ -23,7 +23,6 @@ fashion & retail mengambil keputusan berbasis data secara cepat dan strategis.
 
 st.divider()
 
-#client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 client = Groq(api_key=st.secrets["GROQ_KEY"])  # pakai Secrets Streamlit
 
 # ======================
@@ -66,8 +65,6 @@ if uploaded_file is not None:
     df.columns = df.columns.str.lower().str.strip()
 
     # Hitung total penjualan per produk
-
-    # Grafik lebih kecil & rapi
     if "product_name" in df.columns and "quantity" in df.columns:
         st.subheader("📈 Total Unit Terjual per Produk")
 
