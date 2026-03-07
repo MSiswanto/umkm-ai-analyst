@@ -5,6 +5,27 @@ import matplotlib.pyplot as plt
 import os
 from groq import Groq
 from dotenv import load_dotenv
+import uuid
+
+if "user_id" not in st.session_state:
+    st.session_state.user_id = str(uuid.uuid4())
+
+def log_event(event):
+
+    data = {
+        "user_id": st.session_state.user_id,
+        "event": event
+    }
+
+    df = pd.DataFrame([data])
+
+    try:
+        old = pd.read_csv("events.csv")
+        df = pd.concat([old,df])
+    except:
+        pass
+
+    df.to_csv("events.csv",index=False)
 
 load_dotenv(override=True)
 
@@ -259,3 +280,59 @@ elif menu == "AI Consultant":
                 )
 
                 st.write(response.choices[0].message.content)
+
+elif menu == "Platform Analytics":
+
+    st.title("📊 Platform Usage")
+
+    try:
+        df = pd.read_csv("events.csv")
+
+        st.metric("Total Events",len(df))
+
+        usage = df["event"].value_counts()
+
+        st.bar_chart(usage)
+
+    except:
+        st.info("Belum ada data usage.")
+
+elif menu == "User Feedback":
+
+    st.title("💬 Beri Feedback")
+
+    st.write("Masukan Anda membantu kami meningkatkan platform ini.")
+
+    name = st.text_input("Nama (opsional)")
+    phone = st.text_input("Nomor HP / WhatsApp")
+
+    rating = st.slider("Rating Platform",1,5)
+
+    feedback = st.text_area("Masukan / Saran")
+
+    if st.button("Kirim Feedback"):
+
+        if phone == "":
+            st.error("Mohon isi nomor HP atau WhatsApp")
+        else:
+
+            data = {
+                "timestamp": pd.Timestamp.now(),
+                "user_id": st.session_state.user_id,
+                "name": name,
+                "phone": phone,
+                "rating": rating,
+                "feedback": feedback
+            }
+
+            df = pd.DataFrame([data])
+
+            try:
+                old = pd.read_csv("feedback.csv")
+                df = pd.concat([old,df])
+            except:
+                pass
+
+            df.to_csv("feedback.csv",index=False)
+
+            st.success("Terima kasih atas feedback Anda!")
