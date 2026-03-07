@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import os
 from groq import Groq
@@ -15,13 +16,14 @@ client = Groq(api_key=st.secrets["GROQ_KEY"])
 # SIDEBAR
 # =========================
 
-st.sidebar.title("UMKM AI Analyst")
+st.sidebar.title("🚀 UMKM AI Analyst")
 
 menu = st.sidebar.selectbox(
-    "Menu",
+    "Navigation",
     [
         "Dashboard",
-        "Marketplace Analysis",
+        "Marketplace Intelligence",
+        "Early Warning",
         "Forecast",
         "Pricing Lab",
         "AI Consultant"
@@ -31,29 +33,31 @@ menu = st.sidebar.selectbox(
 uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
 
 # =========================
-# DATA PROCESSING
+# DATA PREPROCESSING
 # =========================
 
 def preprocess(df):
 
     df.columns = df.columns.str.lower().str.strip()
 
-    if {"price", "quantity"}.issubset(df.columns):
-        df["revenue"] = df["price"] * df["quantity"]
-
-    if {"price", "cost", "quantity"}.issubset(df.columns):
-        df["profit"] = (df["price"] - df["cost"]) * df["quantity"]
-
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
         df["week"] = df["date"].dt.to_period("W").astype(str)
         df["month"] = df["date"].dt.to_period("M").astype(str)
 
+    if {"price","quantity"}.issubset(df.columns):
+        df["revenue"] = df["price"] * df["quantity"]
+
+    if {"price","cost","quantity"}.issubset(df.columns):
+        df["profit"] = (df["price"] - df["cost"]) * df["quantity"]
+
     return df
 
+# =========================
+# LOAD DATA
+# =========================
 
 if uploaded_file:
-
     df = pd.read_csv(uploaded_file)
     df = preprocess(df)
 
@@ -66,18 +70,18 @@ if menu == "Dashboard":
     st.title("📊 Business Dashboard")
 
     if not uploaded_file:
-        st.info("Upload data CSV di sidebar untuk memulai.")
+        st.info("Upload data di sidebar untuk memulai.")
     else:
 
-        col1, col2, col3 = st.columns(3)
+        col1,col2,col3 = st.columns(3)
 
-        col1.metric("Total Revenue", f"Rp {df['revenue'].sum():,.0f}")
-        col2.metric("Total Profit", f"Rp {df['profit'].sum():,.0f}")
-        col3.metric("Total Orders", df.shape[0])
+        col1.metric("Total Revenue",f"Rp {df['revenue'].sum():,.0f}")
+        col2.metric("Total Profit",f"Rp {df['profit'].sum():,.0f}")
+        col3.metric("Transactions",df.shape[0])
 
         st.divider()
 
-        if {"product_name", "quantity"}.issubset(df.columns):
+        if {"product_name","quantity"}.issubset(df.columns):
 
             st.subheader("Top Selling Products")
 
@@ -90,35 +94,71 @@ if menu == "Dashboard":
 
             st.bar_chart(top_products)
 
-        if {"month", "quantity"}.issubset(df.columns):
+        if {"month","quantity"}.issubset(df.columns):
 
-            st.subheader("Monthly Sales")
+            st.subheader("Monthly Sales Trend")
 
             monthly = df.groupby("month")["quantity"].sum()
 
             st.line_chart(monthly)
 
 # =========================
-# MARKETPLACE ANALYSIS
+# MARKETPLACE INTELLIGENCE
 # =========================
 
-elif menu == "Marketplace Analysis":
+elif menu == "Marketplace Intelligence":
 
-    st.title("🛒 Marketplace Comparison")
+    st.title("🛒 Marketplace Intelligence")
 
     if not uploaded_file:
         st.info("Upload data terlebih dahulu.")
     else:
 
-        if {"marketplace", "revenue"}.issubset(df.columns):
+        if {"marketplace","revenue"}.issubset(df.columns):
 
-            marketplace_sales = df.groupby("marketplace")["revenue"].sum()
+            revenue_market = df.groupby("marketplace")["revenue"].sum()
 
-            st.bar_chart(marketplace_sales)
+            st.subheader("Revenue by Marketplace")
 
-            st.write("Revenue per Marketplace")
+            st.bar_chart(revenue_market)
 
-            st.dataframe(marketplace_sales)
+            best = revenue_market.idxmax()
+
+            st.success(f"Marketplace dengan performa terbaik: **{best}**")
+
+# =========================
+# EARLY WARNING
+# =========================
+
+elif menu == "Early Warning":
+
+    st.title("⚠️ Business Risk Detection")
+
+    if not uploaded_file:
+        st.info("Upload data terlebih dahulu.")
+    else:
+
+        if {"product_name","quantity"}.issubset(df.columns):
+
+            product_sales = (
+                df.groupby("product_name")["quantity"]
+                .sum()
+                .sort_values()
+                .head(5)
+            )
+
+            st.warning("Produk dengan penjualan terendah")
+
+            st.dataframe(product_sales)
+
+        if "profit" in df.columns:
+
+            low_margin = df[df["profit"] < 0]
+
+            if len(low_margin) > 0:
+                st.error("Ada transaksi dengan profit negatif")
+
+                st.dataframe(low_margin.head())
 
 # =========================
 # FORECAST
@@ -126,23 +166,23 @@ elif menu == "Marketplace Analysis":
 
 elif menu == "Forecast":
 
-    st.title("📈 Sales Forecast")
+    st.title("📈 Demand Forecast")
 
     if not uploaded_file:
         st.info("Upload data terlebih dahulu.")
     else:
 
-        if {"month", "quantity"}.issubset(df.columns):
+        if {"month","quantity"}.issubset(df.columns):
 
             monthly = df.groupby("month")["quantity"].sum()
 
-            forecast = monthly.mean()
+            forecast = int(monthly.mean())
 
             st.line_chart(monthly)
 
             st.metric(
-                "Prediksi Penjualan Bulan Depan",
-                f"{forecast:.0f} unit"
+                "Prediksi Demand Bulan Depan",
+                f"{forecast} unit"
             )
 
 # =========================
@@ -151,22 +191,23 @@ elif menu == "Forecast":
 
 elif menu == "Pricing Lab":
 
-    st.title("🧪 Pricing Simulation")
+    st.title("🧪 Pricing Strategy Lab")
 
     if not uploaded_file:
         st.info("Upload data terlebih dahulu.")
     else:
 
-        if {"product_name", "cost"}.issubset(df.columns):
+        if {"product_name","cost"}.issubset(df.columns):
 
-            markup = st.slider("Markup (%)", 0, 200, 50)
+            markup = st.slider("Markup (%)",0,200,50)
 
-            df["simulated_price"] = df["cost"] * (1 + markup / 100)
+            df["sim_price"] = df["cost"] * (1 + markup/100)
 
             st.write("Simulasi harga baru")
 
             st.dataframe(
-                df[["product_name", "cost", "simulated_price"]].head(20)
+                df[["product_name","cost","sim_price"]]
+                .head(20)
             )
 
 # =========================
@@ -177,15 +218,15 @@ elif menu == "AI Consultant":
 
     st.title("🤖 AI Business Consultant")
 
-    question = st.text_area("Tanyakan sesuatu tentang bisnis Anda")
+    question = st.text_area("Tanyakan tentang bisnis fashion/retail")
 
-    if st.button("Tanya AI"):
+    if st.button("Ask AI"):
 
         with st.spinner("AI sedang berpikir..."):
 
             response = client.chat.completions.create(
-                messages=[{"role": "user", "content": question}],
-                model="llama-3.1-8b-instant",
+                messages=[{"role":"user","content":question}],
+                model="llama-3.1-8b-instant"
             )
 
             st.write(response.choices[0].message.content)
@@ -199,26 +240,22 @@ elif menu == "AI Consultant":
             summary = df.describe(include="all").to_string()
 
             prompt = f"""
-            Berikut data bisnis fashion/retail:
+            Berikut ringkasan data bisnis retail:
 
             {summary}
 
             Berikan:
             - insight utama
-            - produk paling potensial
-            - risiko bisnis
-            - strategi yang direkomendasikan
+            - peluang bisnis
+            - risiko
+            - strategi peningkatan profit
             """
 
-            with st.spinner("AI menganalisis data..."):
+            with st.spinner("AI sedang menganalisis..."):
 
                 response = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model="llama-3.1-8b-instant",
+                    messages=[{"role":"user","content":prompt}],
+                    model="llama-3.1-8b-instant"
                 )
 
                 st.write(response.choices[0].message.content)
-
-
-
-
