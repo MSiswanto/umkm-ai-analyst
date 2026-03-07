@@ -9,123 +9,216 @@ load_dotenv(override=True)
 
 st.set_page_config(page_title="UMKM AI Analyst", layout="wide")
 
-# ======================
-# HEADER
-# ======================
+client = Groq(api_key=st.secrets["GROQ_KEY"])
 
-st.title("🚀 UMKM AI Analyst")
-st.markdown(
-"""
-Platform analisis bisnis berbasis AI untuk membantu UMKM 
-fashion & retail mengambil keputusan berbasis data secara cepat dan strategis.
-"""
+# =========================
+# SIDEBAR
+# =========================
+
+st.sidebar.title("UMKM AI Analyst")
+
+menu = st.sidebar.selectbox(
+    "Menu",
+    [
+        "Dashboard",
+        "Marketplace Analysis",
+        "Forecast",
+        "Pricing Lab",
+        "AI Consultant"
+    ]
 )
 
-st.divider()
+uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
 
-client = Groq(api_key=st.secrets["GROQ_KEY"])  # pakai Secrets Streamlit
+# =========================
+# DATA PROCESSING
+# =========================
 
-# ======================
-# CHAT SECTION
-# ======================
+def preprocess(df):
 
-st.header("💬 Konsultasi Bisnis dengan AI")
-
-user_input = st.text_input("Tanyakan sesuatu tentang bisnis fashion/retail Anda")
-
-if st.button("Kirim Pertanyaan"):
-    if user_input:
-        with st.spinner("AI sedang berpikir..."):
-            chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": user_input}],
-                model="llama-3.1-8b-instant",
-            )
-            st.success(chat_completion.choices[0].message.content)
-
-st.divider()
-
-# ======================
-# CSV ANALYSIS SECTION
-# ======================
-
-st.header("📊 Upload Data Penjualan (CSV)")
-
-uploaded_file = st.file_uploader("Upload file CSV", type=["csv"])
-
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-
-    st.subheader("Preview Data")
-    st.dataframe(df.head())
-
-    # ======================
-    # SIMPLE VISUALIZATION
-    # ======================
-    # Normalisasi kolom
     df.columns = df.columns.str.lower().str.strip()
 
-    # Hitung total penjualan per produk
-
-    # Grafik lebih kecil & rapi
-    if "product_name" in df.columns and "quantity" in df.columns:
-        st.subheader("📈 Total Unit Terjual per Produk")
-
-        sales_per_product = (
-        df.groupby("product_name")["quantity"]
-        .sum()
-        .sort_values(ascending=False)
-        .head(10)   # tampilkan top 10 saja
-        )
-
-        st.bar_chart(sales_per_product, height=350)
+    if {"price", "quantity"}.issubset(df.columns):
+        df["revenue"] = df["price"] * df["quantity"]
 
     if {"price", "cost", "quantity"}.issubset(df.columns):
-        df["revenue"] = df["price"] * df["quantity"]
         df["profit"] = (df["price"] - df["cost"]) * df["quantity"]
 
-        st.subheader("💰 Total Revenue & Profit")
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+        df["week"] = df["date"].dt.to_period("W").astype(str)
+        df["month"] = df["date"].dt.to_period("M").astype(str)
 
-        col1, col2 = st.columns(2)
+    return df
+
+
+if uploaded_file:
+
+    df = pd.read_csv(uploaded_file)
+    df = preprocess(df)
+
+# =========================
+# DASHBOARD
+# =========================
+
+if menu == "Dashboard":
+
+    st.title("📊 Business Dashboard")
+
+    if not uploaded_file:
+        st.info("Upload data CSV di sidebar untuk memulai.")
+    else:
+
+        col1, col2, col3 = st.columns(3)
 
         col1.metric("Total Revenue", f"Rp {df['revenue'].sum():,.0f}")
         col2.metric("Total Profit", f"Rp {df['profit'].sum():,.0f}")
+        col3.metric("Total Orders", df.shape[0])
 
-        fig, ax = plt.subplots()
-        sales_per_product.plot(kind="bar", ax=ax)
-        ax.set_ylabel("Total Terjual")
-        ax.set_xlabel("Produk")
-        st.pyplot(fig)
+        st.divider()
 
-    # ======================
-    # AI INSIGHT
-    # ======================
+        if {"product_name", "quantity"}.issubset(df.columns):
 
-    total_rows = df.shape[0]
-    total_columns = df.shape[1]
-    summary = df.describe(include="all").to_string()
+            st.subheader("Top Selling Products")
 
-    prompt = f"""
-    Berikut adalah ringkasan data penjualan bisnis fashion/retail:
+            top_products = (
+                df.groupby("product_name")["quantity"]
+                .sum()
+                .sort_values(ascending=False)
+                .head(10)
+            )
 
-    Jumlah transaksi: {total_rows}
-    Jumlah kolom: {total_columns}
+            st.bar_chart(top_products)
 
-    Ringkasan statistik:
-    {summary}
+        if {"month", "quantity"}.issubset(df.columns):
 
-    Berikan:
-    1. Insight utama dari data
-    2. Produk paling potensial
-    3. Risiko atau masalah yang terlihat
-    4. Rekomendasi strategi bisnis yang konkret
-    """
+            st.subheader("Monthly Sales")
 
-    if st.button("🔎 Analisis dengan AI"):
-        with st.spinner("AI sedang menganalisis data..."):
-            chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
+            monthly = df.groupby("month")["quantity"].sum()
+
+            st.line_chart(monthly)
+
+# =========================
+# MARKETPLACE ANALYSIS
+# =========================
+
+elif menu == "Marketplace Analysis":
+
+    st.title("🛒 Marketplace Comparison")
+
+    if not uploaded_file:
+        st.info("Upload data terlebih dahulu.")
+    else:
+
+        if {"marketplace", "revenue"}.issubset(df.columns):
+
+            marketplace_sales = df.groupby("marketplace")["revenue"].sum()
+
+            st.bar_chart(marketplace_sales)
+
+            st.write("Revenue per Marketplace")
+
+            st.dataframe(marketplace_sales)
+
+# =========================
+# FORECAST
+# =========================
+
+elif menu == "Forecast":
+
+    st.title("📈 Sales Forecast")
+
+    if not uploaded_file:
+        st.info("Upload data terlebih dahulu.")
+    else:
+
+        if {"month", "quantity"}.issubset(df.columns):
+
+            monthly = df.groupby("month")["quantity"].sum()
+
+            forecast = monthly.mean()
+
+            st.line_chart(monthly)
+
+            st.metric(
+                "Prediksi Penjualan Bulan Depan",
+                f"{forecast:.0f} unit"
+            )
+
+# =========================
+# PRICING LAB
+# =========================
+
+elif menu == "Pricing Lab":
+
+    st.title("🧪 Pricing Simulation")
+
+    if not uploaded_file:
+        st.info("Upload data terlebih dahulu.")
+    else:
+
+        if {"product_name", "cost"}.issubset(df.columns):
+
+            markup = st.slider("Markup (%)", 0, 200, 50)
+
+            df["simulated_price"] = df["cost"] * (1 + markup / 100)
+
+            st.write("Simulasi harga baru")
+
+            st.dataframe(
+                df[["product_name", "cost", "simulated_price"]].head(20)
+            )
+
+# =========================
+# AI CONSULTANT
+# =========================
+
+elif menu == "AI Consultant":
+
+    st.title("🤖 AI Business Consultant")
+
+    question = st.text_area("Tanyakan sesuatu tentang bisnis Anda")
+
+    if st.button("Tanya AI"):
+
+        with st.spinner("AI sedang berpikir..."):
+
+            response = client.chat.completions.create(
+                messages=[{"role": "user", "content": question}],
                 model="llama-3.1-8b-instant",
             )
 
-            st.subheader("📈 AI Business Insight")
-            st.write(chat_completion.choices[0].message.content)
+            st.write(response.choices[0].message.content)
+
+    if uploaded_file:
+
+        st.divider()
+
+        if st.button("Generate AI Business Insight"):
+
+            summary = df.describe(include="all").to_string()
+
+            prompt = f"""
+            Berikut data bisnis fashion/retail:
+
+            {summary}
+
+            Berikan:
+            - insight utama
+            - produk paling potensial
+            - risiko bisnis
+            - strategi yang direkomendasikan
+            """
+
+            with st.spinner("AI menganalisis data..."):
+
+                response = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    model="llama-3.1-8b-instant",
+                )
+
+                st.write(response.choices[0].message.content)
+
+
+
+
