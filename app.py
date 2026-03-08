@@ -63,7 +63,11 @@ menu = st.sidebar.selectbox(
     ]
 )
 
-uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
+uploaded_file = st.sidebar.file_uploader(
+    "Upload Data",
+    type=["csv","xlsx"]
+)
+    
 
 # =========================
 # DATA PREPROCESSING
@@ -92,14 +96,12 @@ def preprocess(df):
 # =========================
 
 if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    df = preprocess(df)
-    log_event("dataset_uploaded")
-uploaded_file = st.sidebar.file_uploader(
-    "Upload Data",
-    type=["csv","xlsx"]
-)
-    
+    df = load_data(uploaded_file)
+
+    if df is not None:
+        df = preprocess(df)
+        log_event("dataset_uploaded")
+
 # =========================
 # DASHBOARD
 # =========================
