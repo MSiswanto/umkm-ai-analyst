@@ -47,7 +47,9 @@ menu = st.sidebar.selectbox(
         "Early Warning",
         "Forecast",
         "Pricing Lab",
-        "AI Consultant"
+        "AI Consultant",
+        "Platform Analytics",
+        "User Feedback"
     ]
 )
 
@@ -281,6 +283,10 @@ elif menu == "AI Consultant":
 
                 st.write(response.choices[0].message.content)
 
+# =========================
+# PLATFORM ANALYTICS
+# =========================
+
 elif menu == "Platform Analytics":
 
     st.title("📊 Platform Usage")
@@ -296,6 +302,10 @@ elif menu == "Platform Analytics":
 
     except:
         st.info("Belum ada data usage.")
+
+# =========================
+# USER FEEDBACK
+# =========================
 
 elif menu == "User Feedback":
 
