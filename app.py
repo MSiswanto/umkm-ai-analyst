@@ -289,19 +289,26 @@ elif menu == "AI Consultant":
 
 elif menu == "Platform Analytics":
 
-    st.title("📊 Platform Usage")
+    st.title("📊 Platform Usage Analytics")
 
     try:
-        df = pd.read_csv("events.csv")
 
-        st.metric("Total Events",len(df))
+        events = pd.read_csv("events.csv")
 
-        usage = df["event"].value_counts()
+        col1,col2 = st.columns(2)
+
+        col1.metric("Total Events", len(events))
+        col2.metric("Total Users", events["user_id"].nunique())
+
+        st.subheader("Feature Usage")
+
+        usage = events["event"].value_counts()
 
         st.bar_chart(usage)
 
     except:
         st.info("Belum ada data usage.")
+
 
 # =========================
 # USER FEEDBACK
