@@ -274,22 +274,14 @@ elif menu == "AI Consultant":
 # =========================
 
 elif menu == "Platform Analytics":
-
     st.title("📊 Platform Usage Analytics")
-
     try:
-
         events = pd.read_csv("events.csv")
-
         col1,col2 = st.columns(2)
-
         col1.metric("Total Events", len(events))
         col2.metric("Total Users", events["user_id"].nunique())
-
         st.subheader("Feature Usage")
-
         usage = events["event"].value_counts()
-
         st.bar_chart(usage)
 
     except:
@@ -315,9 +307,7 @@ elif menu == "User Feedback":
 
         if phone.strip() == "":
             st.error("Mohon isi nomor HP atau WhatsApp")
-
         else:
-
             new_data = pd.DataFrame([{
                 "timestamp": pd.Timestamp.now(),
                 "user_id": st.session_state.user_id,
@@ -326,14 +316,18 @@ elif menu == "User Feedback":
                 "rating": rating,
                 "feedback": feedback
             }])
-
+            st.divider()
+            st.subheader("User Feedback")
+            
             try:
-                old_data = pd.read_csv("feedback.csv")
+                feedback_df = pd.read_csv("feedback.csv")
                 updated = pd.concat([old_data, new_data], ignore_index=True)
+                st.dataframe(feedback_df)
 
             except:
                 updated = new_data
+                st.info("Belum ada feedback.")
+                
 
             updated.to_csv("feedback.csv", index=False)
-
             st.success("Terima kasih atas feedback Anda!")
