@@ -7,25 +7,35 @@ from groq import Groq
 from dotenv import load_dotenv
 import uuid
 
+# =========================
+# USER SESSION TRACKING
+# =========================
+
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
+
+# =========================
+# EVENT TRACKING
+# =========================
 
 def log_event(event):
 
     data = {
+        "timestamp": pd.Timestamp.now(),
         "user_id": st.session_state.user_id,
         "event": event
     }
 
-    df = pd.DataFrame([data])
+    new = pd.DataFrame([data])
 
     try:
         old = pd.read_csv("events.csv")
-        df = pd.concat([old,df])
+        updated = pd.concat([old, new], ignore_index=True)
     except:
-        pass
+        updated = new
 
-    df.to_csv("events.csv",index=False)
+    updated.to_csv("events.csv", index=False)
+
 
 load_dotenv(override=True)
 
@@ -83,7 +93,8 @@ def preprocess(df):
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
     df = preprocess(df)
-
+    log_event("dataset_uploaded")
+    
 # =========================
 # DASHBOARD
 # =========================
@@ -118,11 +129,8 @@ if menu == "Dashboard":
             st.bar_chart(top_products)
 
         if {"month","quantity"}.issubset(df.columns):
-
             st.subheader("Monthly Sales Trend")
-
             monthly = df.groupby("month")["quantity"].sum()
-
             st.line_chart(monthly)
 
 # =========================
@@ -138,15 +146,10 @@ elif menu == "Marketplace Intelligence":
     else:
 
         if {"marketplace","revenue"}.issubset(df.columns):
-
             revenue_market = df.groupby("marketplace")["revenue"].sum()
-
             st.subheader("Revenue by Marketplace")
-
             st.bar_chart(revenue_market)
-
             best = revenue_market.idxmax()
-
             st.success(f"Marketplace dengan performa terbaik: **{best}**")
 
 # =========================
@@ -171,16 +174,13 @@ elif menu == "Early Warning":
             )
 
             st.warning("Produk dengan penjualan terendah")
-
             st.dataframe(product_sales)
 
         if "profit" in df.columns:
-
             low_margin = df[df["profit"] < 0]
 
             if len(low_margin) > 0:
                 st.error("Ada transaksi dengan profit negatif")
-
                 st.dataframe(low_margin.head())
 
 # =========================
@@ -194,20 +194,16 @@ elif menu == "Forecast":
     if not uploaded_file:
         st.info("Upload data terlebih dahulu.")
     else:
-
         if {"month","quantity"}.issubset(df.columns):
-
             monthly = df.groupby("month")["quantity"].sum()
-
             forecast = int(monthly.mean())
-
             st.line_chart(monthly)
-
             st.metric(
                 "Prediksi Demand Bulan Depan",
                 f"{forecast} unit"
             )
-
+            log_event("forecast_used")
+        
 # =========================
 # PRICING LAB
 # =========================
@@ -221,13 +217,10 @@ elif menu == "Pricing Lab":
     else:
 
         if {"product_name","cost"}.issubset(df.columns):
-
             markup = st.slider("Markup (%)",0,200,50)
-
             df["sim_price"] = df["cost"] * (1 + markup/100)
 
             st.write("Simulasi harga baru")
-
             st.dataframe(
                 df[["product_name","cost","sim_price"]]
                 .head(20)
@@ -240,31 +233,24 @@ elif menu == "Pricing Lab":
 elif menu == "AI Consultant":
 
     st.title("🤖 AI Business Consultant")
-
     question = st.text_area("Tanyakan tentang bisnis fashion/retail")
 
     if st.button("Ask AI"):
-
         with st.spinner("AI sedang berpikir..."):
-
             response = client.chat.completions.create(
                 messages=[{"role":"user","content":question}],
                 model="llama-3.1-8b-instant"
             )
-
             st.write(response.choices[0].message.content)
+            log_event("ai_consultant_used")
 
     if uploaded_file:
-
         st.divider()
 
         if st.button("Generate AI Business Insight"):
-
             summary = df.describe(include="all").to_string()
-
             prompt = f"""
             Berikut ringkasan data bisnis retail:
-
             {summary}
 
             Berikan:
