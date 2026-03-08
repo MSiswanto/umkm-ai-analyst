@@ -315,34 +315,32 @@ elif menu == "User Feedback":
 
     name = st.text_input("Nama (opsional)")
     phone = st.text_input("Nomor HP / WhatsApp")
-
-    rating = st.slider("Rating Platform",1,5)
-
+    rating = st.slider("Rating Platform", 1, 5)
     feedback = st.text_area("Masukan / Saran")
 
     if st.button("Kirim Feedback"):
 
-        if phone == "":
+        if phone.strip() == "":
             st.error("Mohon isi nomor HP atau WhatsApp")
+
         else:
 
-            data = {
+            new_data = pd.DataFrame([{
                 "timestamp": pd.Timestamp.now(),
                 "user_id": st.session_state.user_id,
                 "name": name,
                 "phone": phone,
                 "rating": rating,
                 "feedback": feedback
-            }
-
-            df = pd.DataFrame([data])
+            }])
 
             try:
-                old = pd.read_csv("feedback.csv")
-                df = pd.concat([old,df])
-            except:
-                pass
+                old_data = pd.read_csv("feedback.csv")
+                updated = pd.concat([old_data, new_data], ignore_index=True)
 
-            df.to_csv("feedback.csv",index=False)
+            except:
+                updated = new_data
+
+            updated.to_csv("feedback.csv", index=False)
 
             st.success("Terima kasih atas feedback Anda!")
