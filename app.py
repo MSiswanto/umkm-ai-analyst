@@ -324,13 +324,15 @@ elif menu == "User Feedback":
                 "rating": rating_value,
                 "feedback": feedback
             }])
-            
+            st.caption(
+                "Jika Anda bersedia dihubungi untuk wawancara pengguna, silakan isi nomor WhatsApp."
+            )
             st.download_button(
                 "Download Feedback CSV",
                 feedback_df.to_csv(index=False),
                 "feedback.csv",
                 "text/csv"
-                )
+            )
             try:
                 old_data = pd.read_csv("feedback.csv")
                 updated = pd.concat([old_data, new_data], ignore_index=True)
