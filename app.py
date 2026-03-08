@@ -295,12 +295,17 @@ elif menu == "Platform Analytics":
 elif menu == "User Feedback":
 
     st.title("💬 Beri Feedback")
-
     st.write("Masukan Anda membantu kami meningkatkan platform ini.")
 
     name = st.text_input("Nama (opsional)")
     phone = st.text_input("Nomor HP / WhatsApp")
-    rating = st.slider("Rating Platform", 1, 5)
+
+    rating = st.selectbox(
+        "Rating Platform",
+        ["⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"]
+    )
+
+    rating_value = len(rating)
     feedback = st.text_area("Masukan / Saran")
 
     if st.button("Kirim Feedback"):
@@ -313,21 +318,5 @@ elif menu == "User Feedback":
                 "user_id": st.session_state.user_id,
                 "name": name,
                 "phone": phone,
-                "rating": rating,
+                "rating": rating_value,
                 "feedback": feedback
-            }])
-            st.divider()
-            st.subheader("User Feedback")
-            
-            try:
-                feedback_df = pd.read_csv("feedback.csv")
-                updated = pd.concat([old_data, new_data], ignore_index=True)
-                st.dataframe(feedback_df)
-
-            except:
-                updated = new_data
-                st.info("Belum ada feedback.")
-                
-
-            updated.to_csv("feedback.csv", index=False)
-            st.success("Terima kasih atas feedback Anda!")
