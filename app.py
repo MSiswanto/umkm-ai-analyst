@@ -92,6 +92,24 @@ def preprocess(df):
     return df
 
 # =========================
+# HELPER FUNCTIONS
+# =========================
+
+def load_data(uploaded_file):
+
+    if uploaded_file.name.endswith(".csv"):
+        df = pd.read_csv(uploaded_file)
+
+    elif uploaded_file.name.endswith(".xlsx"):
+        df = pd.read_excel(uploaded_file)
+
+    else:
+        st.error("Format file tidak didukung.")
+        return None
+
+    return df
+
+# =========================
 # LOAD DATA
 # =========================
 
@@ -101,7 +119,7 @@ if uploaded_file:
     if df is not None:
         df = preprocess(df)
         log_event("dataset_uploaded")
-
+        
 # =========================
 # DASHBOARD
 # =========================
