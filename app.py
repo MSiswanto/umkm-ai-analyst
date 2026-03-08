@@ -306,13 +306,16 @@ elif menu == "User Feedback":
     )
 
     rating_value = len(rating)
+
     feedback = st.text_area("Masukan / Saran")
 
     if st.button("Kirim Feedback"):
 
         if phone.strip() == "":
             st.error("Mohon isi nomor HP atau WhatsApp")
+
         else:
+
             new_data = pd.DataFrame([{
                 "timestamp": pd.Timestamp.now(),
                 "user_id": st.session_state.user_id,
@@ -320,3 +323,41 @@ elif menu == "User Feedback":
                 "phone": phone,
                 "rating": rating_value,
                 "feedback": feedback
+            }])
+            
+            st.download_button(
+                "Download Feedback CSV",
+                feedback_df.to_csv(index=False),
+                "feedback.csv",
+                "text/csv"
+                )
+            try:
+                old_data = pd.read_csv("feedback.csv")
+                updated = pd.concat([old_data, new_data], ignore_index=True)
+
+            except:
+                updated = new_data
+
+            updated.to_csv("feedback.csv", index=False)
+
+            st.success("Terima kasih atas feedback Anda!")
+
+    st.divider()
+
+    st.subheader("📊 Feedback dari Pengguna")
+
+    try:
+
+        feedback_df = pd.read_csv("feedback.csv")
+
+        avg_rating = feedback_df["rating"].mean()
+
+        col1, col2 = st.columns(2)
+
+        col1.metric("Total Feedback", len(feedback_df))
+        col2.metric("Average Rating", f"{avg_rating:.1f} ⭐")
+
+        st.dataframe(feedback_df)
+
+    except:
+        st.info("Belum ada feedback.")
