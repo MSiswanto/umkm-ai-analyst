@@ -287,12 +287,13 @@ elif menu == "Platform Analytics":
     except:
         st.info("Belum ada data usage.")
 
-
 # =========================
 # USER FEEDBACK
 # =========================
 
 elif menu == "User Feedback":
+
+    import os
 
     st.title("💬 Beri Feedback")
     st.write("Masukan Anda membantu kami meningkatkan platform ini.")
@@ -309,6 +310,10 @@ elif menu == "User Feedback":
 
     feedback = st.text_area("Masukan / Saran")
 
+    st.caption(
+    "Jika Anda bersedia dihubungi untuk wawancara pengguna, silakan isi nomor WhatsApp."
+    )
+
     if st.button("Kirim Feedback"):
 
         if phone.strip() == "":
@@ -324,20 +329,13 @@ elif menu == "User Feedback":
                 "rating": rating_value,
                 "feedback": feedback
             }])
-            st.caption(
-                "Jika Anda bersedia dihubungi untuk wawancara pengguna, silakan isi nomor WhatsApp."
-            )
-            st.download_button(
-                "Download Feedback CSV",
-                feedback_df.to_csv(index=False),
-                "feedback.csv",
-                "text/csv"
-            )
-            try:
+
+            if os.path.exists("feedback.csv"):
+
                 old_data = pd.read_csv("feedback.csv")
                 updated = pd.concat([old_data, new_data], ignore_index=True)
 
-            except:
+            else:
                 updated = new_data
 
             updated.to_csv("feedback.csv", index=False)
@@ -348,7 +346,7 @@ elif menu == "User Feedback":
 
     st.subheader("📊 Feedback dari Pengguna")
 
-    try:
+    if os.path.exists("feedback.csv"):
 
         feedback_df = pd.read_csv("feedback.csv")
 
@@ -361,5 +359,13 @@ elif menu == "User Feedback":
 
         st.dataframe(feedback_df)
 
-    except:
+        st.download_button(
+            "Download Feedback CSV",
+            feedback_df.to_csv(index=False),
+            "feedback.csv",
+            "text/csv"
+        )
+
+    else:
+
         st.info("Belum ada feedback.")
