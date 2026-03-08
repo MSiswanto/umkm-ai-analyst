@@ -74,7 +74,8 @@ def preprocess(df):
     df.columns = df.columns.str.lower().str.strip()
 
     if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"])
+        #df["date"] = pd.to_datetime(df["date"])
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
         df["week"] = df["date"].dt.to_period("W").astype(str)
         df["month"] = df["date"].dt.to_period("M").astype(str)
 
@@ -94,6 +95,10 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
     df = preprocess(df)
     log_event("dataset_uploaded")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload Data",
+    type=["csv","xlsx"]
+)
     
 # =========================
 # DASHBOARD
@@ -347,13 +352,10 @@ elif menu == "User Feedback":
     st.subheader("📊 Feedback dari Pengguna")
 
     if os.path.exists("feedback.csv"):
-
         feedback_df = pd.read_csv("feedback.csv")
-
         avg_rating = feedback_df["rating"].mean()
 
         col1, col2 = st.columns(2)
-
         col1.metric("Total Feedback", len(feedback_df))
         col2.metric("Average Rating", f"{avg_rating:.1f} ⭐")
 
