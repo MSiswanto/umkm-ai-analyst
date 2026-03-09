@@ -154,7 +154,11 @@ if uploaded_file:
 
     if df is not None:
         df = preprocess(df)
-        log_event("dataset_uploaded")
+        REQUIRED_COLUMNS = ["product_name","quantity","price"]
+        missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
+
+        if missing:
+            st.warning(f"Kolom berikut tidak ditemukan: {missing}")
         
 # =========================
 # DASHBOARD
