@@ -67,15 +67,60 @@ uploaded_file = st.sidebar.file_uploader(
     "Upload Data",
     type=["csv","xlsx"]
 )
-    
 
+
+# =========================
+# HELPER FUNCTIONS
+# =========================
+
+COLUMN_ALIASES = {
+    "quantity": ["quantity","qty","jumlah","sold","terjual"],
+    "price": ["price","harga","selling_price","sale_price"],
+    "cost": ["cost","modal","cost_price","biaya"],
+    "product_name": ["product","product_name","nama_produk","item","produk"],
+    "date": ["date","tanggal","order_date"]
+}
+def load_data(uploaded_file):
+
+    if uploaded_file.name.endswith(".csv"):
+        df = pd.read_csv(uploaded_file)
+
+    elif uploaded_file.name.endswith(".xlsx"):
+        df = pd.read_excel(uploaded_file)
+
+    else:
+        st.error("Format file tidak didukung.")
+        return None
+
+    return df
+
+# =========================
+# NORMALISASI KOLOM
+# =========================
+
+def normalize_columns(df):
+    df.columns = df.columns.str.lower().str.strip()
+
+    rename_map = {}
+
+    for standard, aliases in COLUMN_ALIASES.items():
+        for col in df.columns:
+
+            if col in aliases:
+                rename_map[col] = standard
+
+    df = df.rename(columns=rename_map)
+
+    return df
+
+    
 # =========================
 # DATA PREPROCESSING
 # =========================
 
 def preprocess(df):
 
-    df.columns = df.columns.str.lower().str.strip()
+    df = normalize_columns(df)
 
     if "date" in df.columns:
         #df["date"] = pd.to_datetime(df["date"])
@@ -91,23 +136,14 @@ def preprocess(df):
 
     return df
 
-# =========================
-# HELPER FUNCTIONS
-# =========================
+#-------------------
+REQUIRED_COLUMNS = ["product_name","quantity","price"]
 
-def load_data(uploaded_file):
+missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
 
-    if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
+if missing:
+    st.warning(f"Kolom berikut tidak ditemukan: {missing}")
 
-    elif uploaded_file.name.endswith(".xlsx"):
-        df = pd.read_excel(uploaded_file)
-
-    else:
-        st.error("Format file tidak didukung.")
-        return None
-
-    return df
 
 # =========================
 # LOAD DATA
