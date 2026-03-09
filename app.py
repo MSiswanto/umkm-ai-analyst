@@ -136,15 +136,6 @@ def preprocess(df):
 
     return df
 
-#-------------------
-REQUIRED_COLUMNS = ["product_name","quantity","price"]
-
-missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
-
-if missing:
-    st.warning(f"Kolom berikut tidak ditemukan: {missing}")
-
-
 # =========================
 # LOAD DATA
 # =========================
