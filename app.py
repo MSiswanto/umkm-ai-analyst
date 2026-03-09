@@ -77,7 +77,7 @@ COLUMN_ALIASES = {
     "quantity": ["quantity","qty","jumlah","sold","terjual"],
     "price": ["price","harga","selling_price","sale_price"],
     "cost": ["cost","modal","cost_price","biaya"],
-    "product_name": ["product","product_name","nama_produk","item","produk"],
+    "product_name": ["product","product_name","nama_produk","item","produk","nama produk" ],
     "date": ["date","tanggal","order_date"]
 }
 def load_data(uploaded_file):
